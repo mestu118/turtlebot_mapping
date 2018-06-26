@@ -82,8 +82,11 @@ if __name__ == '__main__':
 	# Subcribe to the images published by rgb and call the image_callback metho
 	rospy.Subscriber('/camera/rgb/image_raw', Image, image_callback)
         # Customize the following values so they are appropriate for your location
-        position1 = {'x': 1.06, 'y' : -0.134}
-        position2 = {'x': 3.42, 'y': -3.81}
+        position0 = {'x': 3.42, 'y': -3.81}
+	position1 = {'x': 1.06, 'y' : -0.134}
+	position2 = {'x': 3.63, 'y': 2.42}
+	position3 = {'x': 8.37, 'y': 6.15}
+	position4 = {'x': 11.6, 'y': 4.52}
         quaternion = {'r1' : 0.000, 'r2' : 0.000, 'r3' : 0.000, 'r4' : 1.000}
         success = navigator.goto(position1, quaternion)
         counter = 0
