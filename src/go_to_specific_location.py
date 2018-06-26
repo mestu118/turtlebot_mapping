@@ -69,56 +69,77 @@ def image_callback(msg):
 	else:
 		cv2.imwrite('camera_image{}.jpeg'.format(rospy.Time.now().to_sec()), cv2_img)	
 
+def rotate(rotation_publisher):
+    angle = 2*PI
+    vel_msg = Twist()
+    angular_speed = 0.1
+    vel_msg.angular.z = angular_speed
+    current_angle = 0
+    t0 = rospy.Time.now().to_sec()
+    while current_angle < angle:
+        rotation_publisher.publish(vel_msg)
+        t1 = rospy.Time.now().to_sec()
+        current_angle = angular_speed*(t1 - t0)
+    rospy.loginfo("Rotated")
+
 if __name__ == '__main__':
-    try:
+    try:    
         rospy.init_node('nav_test', anonymous=False)
         # Define the Twist compenent
         rotation_publisher = rospy.Publisher('/cmd_vel_mux/input/navi', Twist, queue_size=10)
         vel_msg = Twist()
-	angular_speed = 1
-        vel_msg.angular.z = 1
+        angular_speed = 0.1
+        vel_msg.angular.z = angular_speed
 	angle = 360*2*PI/360
         navigator = GoToPose()
 	# Subcribe to the images published by rgb and call the image_callback metho
-	rospy.Subscriber('/camera/rgb/image_raw', Image, image_callback)
+	#rospy.Subscriber('/camera/rgb/image_raw', Image, image_callback)
         # Customize the following values so they are appropriate for your location
-        position0 = {'x': 3.42, 'y': -3.81}
-	position1 = {'x': 1.06, 'y' : -0.134}
-	position2 = {'x': 3.63, 'y': 2.42}
-	position3 = {'x': 8.37, 'y': 6.15}
+        position0 = {'x': 1.06, 'y' : -0.134}
+        position1 = {'x': 3.42, 'y': -3.81}
+        position2 = {'x': 3.63, 'y': 2.42}
+        position3 = {'x': 8.37, 'y': 6.15}
 	position4 = {'x': 11.6, 'y': 4.52}
         quaternion = {'r1' : 0.000, 'r2' : 0.000, 'r3' : 0.000, 'r4' : 1.000}
+        rospy.lofingo("Going to Position 1")
         success = navigator.goto(position1, quaternion)
         counter = 0
-        while success: 
-            if success and counter == 0:
-                # Once succesful turn 360 degrees
-		current_angle = 0
-		t0 = rospy.Time.now().to_sec()
-		while  current_angle < angle:
-                	rotation_publisher.publish(vel_msg)
-			t1 = rospy.Time.now().to_sec()
-			current_angle = angular_speed*(t1 - t0)
-            	rospy.loginfo("Rotated")
-                # Go to next desired location
-                success = navigator.goto(position2, quaternion)
-                counter = 1
-                rospy.loginfo("Returning to position 2")
-            elif success and counter == 1:
-		current_angle = 0
-		t0 = rospy.Time.now().to_sec()
-		while current_angle < angle:
-                	rotation_publisher.publish(vel_msg)
-			t1 = rospy.Time.now().to_sec()
-			current_angle = angular_speed*(t1 - t0)
-		rospy.loginfo("Rotated")
-                success = navigator.goto(position1, quaternion)
-                counter = 0
-                rospy.loginfo("Going to position1")
-            else:
-                rospy.loginfo("The base failed to reach the desired pose")
-            # Sleep to give the last log messages time to be sent
+        while success:
+            rotate(rotation_publisher)
+            rospy.loginfo("Going to Position 2")
+            success = navigator.goto(position2, quaternion)
+            rotate(rotation_publisher)
+            rospy.loginfo("Going to Position 3")
+            success = navigator.goto(position3, quaternion)
+            rospy.loginfo("Going to Position 4")
+            success = navigator.goto(position4, quaternion)
+            rospy.loginfo("Going to Position 0")
+            success = navigator.goto(position0, quaternion)
             rospy.sleep(1)
+            
+        #while success: 
+        #    if success and counter == 0:
+        #        # Once succesful turn 360 degrees
+       	#        rotate(rotation_publisher)
+        #        rospy.loginfo("Going to Position 2")
+        #        success = navigator.goto(position0, quaternion) 
+        #        counter = 1
+        #        rospy.loginfo("Returning to position 2")
+        #    elif success and counter == 1:
+        #        current_angle = 0
+	#	t0 = rospy.Time.now().to_sec()
+        #        while current_angle < angle:
+        #       	    rotation_publisher.publish(vel_msg)
+       	#	    t1 = rospy.Time.now().to_sec()
+	#            current_angle = angular_speed*(t1 - t0)
+        #        rospy.loginfo("Rotated")
+        #        success = navigator.goto(position1, quaternion)
+        #        counter = 0
+        #        rospy.loginfo("Going to position1")
+        #    else:
+        #        rospy.loginfo("The base failed to reach the desired pose")
+        #    # Sleep to give the last log messages time to be sent
+        #    rospy.sleep(1)
 
     except rospy.ROSInterruptException:
         rospy.loginfo("Ctrl-C caught. Quitting")
