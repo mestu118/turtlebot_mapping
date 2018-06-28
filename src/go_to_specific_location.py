@@ -80,7 +80,8 @@ if __name__ == '__main__':
         rotation_publisher = rospy.Publisher('/cmd_vel_mux/input/navi', Twist, queue_size=10)
         navigator = GoToPose()
         # Customize the following values so they are appropriate for your location
-        position1 = {'x': 3.34, 'y': -3.86}
+        #position1 = {'x': 3.34, 'y': -3.86}
+        position1 = {'x': 0.0, 'y': 0.0}
         position2 = {'x': 0.64, 'y' : 0.13}
         position3 = {'x': 5.24, 'y': -0.08}
         position4 = {'x': 3.71, 'y': 2.3}
@@ -106,8 +107,10 @@ if __name__ == '__main__':
             rospy.loginfo("Going to next position")
             success = navigator.goto(positions[count], quaternion)
             if success:
+                rospy.loginfo("Got to location succesfully")
                 rotate(rotation_publisher)
-            rospy.loginfo("Next location")
+            else:
+                rospy.loginfo("Did not get to location successfully")
             count += 1
             rospy.sleep(1)
         rospy.loginfo("completed")
