@@ -11,7 +11,7 @@ import zipfile
 
 from collections import defaultdict
 from io import StringIO
-from PIL import Image
+#from PIL import Image
 
 sys.path.append("..")
 from object_detection.utils import label_map_util
@@ -19,7 +19,7 @@ from object_detection.utils import visualization_utils as vis_util
 from object_detection.utils import ops as utils_ops
 import rospy
 from actionlib_msgs.msg import * 
-#from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 
@@ -82,13 +82,6 @@ def run_inference_for_single_image(image, graph):
 
 def image_callback(img):
     rospy.loginfo("Received Image!")
-    try:
-        img = bridge.imgmsg_to_cv2(img,"bgr8")
-        #img_arr = load_image_into_numpy_array(img)
-    except CvBridgeError, e:
-        print(e)
-        
-if __name__=="__main__":
     # What model to download.
     MODEL_NAME = 'ssd_mobilenet_v1_coco_2017_11_17'
     MODEL_FILE = MODEL_NAME + '.tar.gz'
@@ -124,40 +117,32 @@ if __name__=="__main__":
     label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
     categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
     category_index = label_map_util.create_category_index(categories)
-
-
-    #Path to images 
-    PATH_TO_TEST_IMAGES_DIR = '/home/drones/models/research/object_detection/test_images'
-    TEST_IMAGE_PATHS = [ os.path.join(PATH_TO_TEST_IMAGES_DIR, 'image{}.jpg'.format(i)) for i in range(1, 3) ]
-
-    # Size, in inches, of the output images.
-    IMAGE_SIZE = (12, 8)
-
-    for image_path in TEST_IMAGE_PATHS:
-        image = Image.open(image_path)
-        # the array based representation of the image will be used later in order to prepare the
-        # result image with boxes and labels on it.
-        image_np = load_image_into_numpy_array(image)
-        # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
-        image_np_expanded = np.expand_dims(image_np, axis=0)
-        # Actual detection.
-        output_dict = run_inference_for_single_image(image_np, detection_graph)
-        # Visualization of the results of a detection.
-        vis_util.visualize_boxes_and_labels_on_image_array(
-            image_np,
-            output_dict['detection_boxes'],
-            output_dict['detection_classes'],
-            output_dict['detection_scores'],
-            category_index,
-            instance_masks=output_dict.get('detection_masks'),
-            use_normalized_coordinates=True,
-            line_thickness=8)
-        cv2.imwrite('image.jpeg', image_np)
-
-    #try:
-     #   rospy.init_node('object_detection', anonymous=True)
-      #  rospy.Subscriber('/camera/rgb/image_raw', Image, image_callback)
-       # rospy.loginfo("working")
-       # rospy.spin()
-    #except rospy.ROSInterruptException:
-    #    rospy.loginfo('Ctrl+C detected -- Shutting Down')
+ 
+    image_np = bridge.imgmsg_to_cv2(img, "bgr8")
+    # the array based representation of the image will be used later in order to prepare the
+    # result image with boxes and labels on it.
+    #image_np = load_image_into_numpy_array(image)
+    # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
+    image_np_expanded = np.expand_dims(image_np, axis=0)
+    # Actual detection.
+    output_dict = run_inference_for_single_image(image_np, detection_graph)
+    # Visualization of the results of a detection.
+    vis_util.visualize_boxes_and_labels_on_image_array(
+        image_np,
+        output_dict['detection_boxes'],
+        output_dict['detection_classes'],
+        output_dict['detection_scores'],
+        category_index,
+        instance_masks=output_dict.get('detection_masks'),
+        use_normalized_coordinates=True,
+        line_thickness=8)
+    cv2.imwrite('image{}.jpeg'.format(str(rospy.get_time())), image_np)
+        
+if __name__=="__main__":
+    try:
+        rospy.init_node('object_detection', anonymous=True)
+        rospy.Subscriber('/camera/rgb/image_raw', Image, image_callback)
+        rospy.loginfo("working")
+        rospy.spin()
+    except rospy.ROSInterruptException:
+        rospy.loginfo('Ctrl+C detected -- Shutting Down')
