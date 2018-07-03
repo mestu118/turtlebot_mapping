@@ -23,7 +23,18 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 
+detection_graph = tf.Graph()
+with detection_graph.as_default():
+	od_graph_def = tf.GraphDef()
+	with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
+		serialized_graph = fid.read()
+		od_graph_def.ParseFromString(serialized_graph)
+		tf.import_graph_def(od_graph_def, name='')
+
+
 bridge = CvBridge()
+image_pub = rospy.Publisher('image_detected', Image, queue_size = 1)
+
 
 if tf.__version__ < '1.4.0':
     raise ImportError('Please upgrade your tensorflow')
@@ -80,44 +91,10 @@ def run_inference_for_single_image(image, graph):
   return output_dict
 
 
-def image_callback(img):
+def image_callback(img, args):
+    detection_graph = args[0]
+    category_index = args[1]
     rospy.loginfo("Received Image!")
-    # What model to download.
-    MODEL_NAME = 'ssd_mobilenet_v1_coco_2017_11_17'
-    MODEL_FILE = MODEL_NAME + '.tar.gz'
-    DOWNLOAD_BASE = 'http://download.tensorflow.org/models/object_detection/'
-    
-    # Path to frozen detection graph. This is the actual model that is used for the object detection.
-    PATH_TO_CKPT = MODEL_NAME + '/frozen_inference_graph.pb'
-    
-    # List of the strings that is used to add correct label for each box.
-    PATH_TO_LABELS = os.path.join('/home/drones/models/research/object_detection/data', 'mscoco_label_map.pbtxt')
-    
-    NUM_CLASSES = 90
-
-    opener = urllib.request.URLopener()
-    opener.retrieve(DOWNLOAD_BASE + MODEL_FILE, MODEL_FILE)
-    tar_file = tarfile.open(MODEL_FILE)
-    
-    for file in tar_file.getmembers():
-        file_name = os.path.basename(file.name)
-        if 'frozen_inference_graph.pb' in file_name:
-            tar_file.extract(file, os.getcwd())
-
-    detection_graph = tf.Graph()
-
-    with detection_graph.as_default():
-        od_graph_def = tf.GraphDef()
-        with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
-            serialized_graph = fid.read()
-            od_graph_def.ParseFromString(serialized_graph)
-            tf.import_graph_def(od_graph_def, name='')
-    
-
-    label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
-    categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
-    category_index = label_map_util.create_category_index(categories)
- 
     image_np = bridge.imgmsg_to_cv2(img, "bgr8")
     # the array based representation of the image will be used later in order to prepare the
     # result image with boxes and labels on it.
@@ -136,13 +113,53 @@ def image_callback(img):
         instance_masks=output_dict.get('detection_masks'),
         use_normalized_coordinates=True,
         line_thickness=8)
-    cv2.imwrite('image{}.jpeg'.format(str(rospy.get_time())), image_np)
+    image_out = bridge.cv2_to_imgmsg(image_np,"bgr8")
+    image_pub.publish(image_out)
+    rospy.loginfo("Ran the Object_dection model successfully")
         
 if __name__=="__main__":
     try:
-        rospy.init_node('object_detection', anonymous=True)
-        rospy.Subscriber('/camera/rgb/image_raw', Image, image_callback)
-        rospy.loginfo("working")
-        rospy.spin()
+		# What model to download.
+		rospy.loginfo("Hello")
+		MODEL_NAME = 'ssd_mobilenet_v1_coco_2017_11_17'
+		MODEL_FILE = MODEL_NAME + '.tar.gz'
+		DOWNLOAD_BASE = 'http://download.tensorflow.org/models/object_detection/'
+
+		# Path to frozen detection graph. This is the actual model that is used for the object detection.
+		PATH_TO_CKPT = MODEL_NAME + '/frozen_inference_graph.pb'
+
+		# List of the strings that is used to add correct label for each box.
+		PATH_TO_LABELS = os.path.join('/home/drones/models/research/object_detection/data', 'mscoco_label_map.pbtxt')
+
+		NUM_CLASSES = 90
+
+		opener = urllib.request.URLopener()
+		opener.retrieve(DOWNLOAD_BASE + MODEL_FILE, MODEL_FILE)
+		tar_file = tarfile.open(MODEL_FILE)
+
+		for file in tar_file.getmembers():
+		    file_name = os.path.basename(file.name)
+		    if 'frozen_inference_graph.pb' in file_name:
+		        tar_file.extract(file, os.getcwd())
+
+		detection_graph = tf.Graph()
+
+		with detection_graph.as_default():
+		    od_graph_def = tf.GraphDef()
+		    with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
+		        serialized_graph = fid.read()
+		        od_graph_def.ParseFromString(serialized_graph)
+		        tf.import_graph_def(od_graph_def, name='')
+
+
+		label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
+		categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
+		category_index = label_map_util.create_category_index(categories)
+
+		#Defining node'
+		rospy.init_node('object_detection', anonymous=True)
+		rospy.Subscriber('/camera/rgb/image_raw', Image, image_callback, (detection_graph, category_index))
+		rospy.loginfo("working")
+		rospy.spin()
     except rospy.ROSInterruptException:
-        rospy.loginfo('Ctrl+C detected -- Shutting Down')
+		rospy.loginfo('Ctrl+C detected -- Shutting Down')
