@@ -23,14 +23,6 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 
-detection_graph = tf.Graph()
-with detection_graph.as_default():
-	od_graph_def = tf.GraphDef()
-	with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
-		serialized_graph = fid.read()
-		od_graph_def.ParseFromString(serialized_graph)
-		tf.import_graph_def(od_graph_def, name='')
-
 
 bridge = CvBridge()
 image_pub = rospy.Publisher('image_detected', Image, queue_size = 1)
@@ -151,7 +143,6 @@ if __name__=="__main__":
 		        od_graph_def.ParseFromString(serialized_graph)
 		        tf.import_graph_def(od_graph_def, name='')
 
-
 		label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
 		categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
 		category_index = label_map_util.create_category_index(categories)
@@ -162,4 +153,4 @@ if __name__=="__main__":
 		rospy.loginfo("working")
 		rospy.spin()
     except rospy.ROSInterruptException:
-		rospy.loginfo('Ctrl+C detected -- Shutting Down')
+      rospy.loginfo('Ctrl+C detected -- Shutting Down')
