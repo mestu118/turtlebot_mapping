@@ -1,0 +1,5 @@
+<launch>
+	<node pkg="rosbag" type="play" name="turt_bag_1000" args="/media/drones/Data3/Davis106_TurtBot/turt_bag_1100.bag"/>
+	<node pkg="specific_goal" name="detecting" type="detecting2.py" output="screen"/>
+	<node name="rviz" pkg="rviz" type="rviz" args="/home/drones/catkin_ws/src/specific_goal/launch/test.rviz"/>
+</launch>
