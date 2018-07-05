@@ -90,13 +90,13 @@ with detection_graph.as_default():
 					use_normalized_coordinates=True,
 					line_thickness=2)
 
-				objArray.detections = []
-				objArray.header = data.header
-				object_count = 1
+				# objArray.detections = []
+				# objArray.header = data.header
+				# object_count = 1
 
-				for i in range(len(objects)):
-					object_count+=1
-					objArray.detections.append(self.object_predict(objects[i], data.header, image_np, cv_image))
+				# for i in range(len(objects)):
+				# 	object_count+=1
+				# 	objArray.detections.append(self.object_predict(objects[i], data.header, image_np, cv_image))
 				img = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
 				image_out = Image()
 				image_out = self.bridge.cv2_to_imgmsg(img, "bgr8")
